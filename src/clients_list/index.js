@@ -1,16 +1,13 @@
 import React, { useState,useEffect } from 'react'
 import { FlatList, Text, View,Alert,KeyboardAvoidingView ,TouchableOpacity } from 'react-native'
 import styles from './styles'
-import {Feather,FontAwesome,FontAwesome5} from '@expo/vector-icons'
-import { SearchBar,Overlay,Button ,Divider } from 'react-native-elements';
-import { FAB ,TextInput} from 'react-native-paper';
-
+import {FontAwesome5} from '@expo/vector-icons'
+import { SearchBar,Overlay,Button ,Divider} from 'react-native-elements';
+import { FAB } from 'react-native-paper';
+import { useWindowDimensions } from 'react-native';
 import _ from 'lodash';
-
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
-import { NavigationContainer } from '@react-navigation/native';
-import { set } from 'react-native-reanimated';
-import { getCurrentDate } from '../utils/functions'
+import InputCustom from '../components/input'
 
 const Tab = createMaterialTopTabNavigator();
 
@@ -56,6 +53,8 @@ const index = ({navigation}) => {
     const [newTel,setNewTel] = useState('');
     const [newEmail,setNewEmail] = useState('');
     const [newDesc,setNewDesc] = useState('');
+
+    const windowWidth = useWindowDimensions().width;
 
     const toggleOverlay = () => {
         setVisible(!visible);
@@ -206,53 +205,62 @@ const index = ({navigation}) => {
                 </View>
                 <FAB
                     style={styles.fab}
-                    small
                     icon="plus"
                     onPress={() => setVisible(true)}
                 />
-                <Overlay isVisible={visible} onBackdropPress={toggleOverlay}>
-                    {/* <View style={styles.FormAddClient}> */}
-                        <Text>Hello from Overlay!</Text>
-                            <TextInput
-                                label="Nome"
+                <Overlay overlayStyle={{backgroundColor:'#E8ECF5',borderRadius:10}} isVisible={visible} onBackdropPress={toggleOverlay}>
+                    <KeyboardAvoidingView
+                        behavior={Platform.OS == "ios" ? "padding" : "height"} >
+                        <View >
+                            <Text style={{textAlign:'center',fontSize:20,fontWeight:'900',color:'#024059'}}>Adicionar Cliente</Text>
+                            <InputCustom 
+                                label={'Nome'}
+                                placeholder={'Paulo'}
                                 value={newName}
-                                onChangeText={text => setText(text)}
+                                setText={setNewName}
+                            />
+                            <View style={{flexDirection:'row',width:windowWidth/2.2}}>
+                                <InputCustom 
+                                    label={'Apelido'}
+                                    placeholder={'Seu Paulo'}
+                                    value={newAlias}
+                                    setText={setNewAlias}
                                 />
-                            {/* <TextInput
-                                label="Apelido"
-                                value={newAlias}
-                                onChangeText={text => setText(text)}
+
+                                <InputCustom 
+                                    label={'Telefone'}
+                                    placeholder={'11981743885'}
+                                    value={newPhone}
+                                    setText={setNewPhone}
                                 />
-                            <TextInput
-                                label="Telefone"
-                                value={newPhone}
-                                onChangeText={text => setText(text)}
-                                />
-                            <TextInput
-                                label="Telefone"
+                            </View>
+                            <InputCustom 
+                                label={'Email'}
+                                placeholder={'seupaulo@email.com.br'}
                                 value={newEmail}
-                                onChangeText={text => setText(text)}
-                                />
-                            <TextInput
-                                label="Desc"
+                                setText={setNewEmail}
+                            />
+                            <InputCustom 
+                                label={'Obs.'}
+                                placeholder={'Ótimo Cliente'}
                                 value={newDesc}
-                                onChangeText={text => setText(text)}
-                                /> */}
-                        <View style={styles.buttonGroup}>
-                            <Button
-                                containerStyle ={{padding:5}}
-                                buttonStyle = {{backgroundColor:'#F25050',width:100,borderRadius:10}}
-                                title="Cancelar"
-                                />
-                            <Button
-                                containerStyle ={{padding:5}}
-                                buttonStyle = {{backgroundColor:'#2C33BF',width:100,borderRadius:10}}
-                                title="Adicionar"
-                                />
-
-
+                                setText={setNewDesc}
+                            />
+                            
+                            <View style={styles.buttonGroup}>
+                                <Button
+                                    containerStyle ={{padding:5}}
+                                    buttonStyle = {{backgroundColor:'#F25050',width:100,borderRadius:10}}
+                                    title="Cancelar"
+                                    />
+                                <Button
+                                    containerStyle ={{padding:5}}
+                                    buttonStyle = {{backgroundColor:'#2C33BF',width:100,borderRadius:10}}
+                                    title="Adicionar"
+                                    />
+                            </View>
                         </View>
-                    {/* </View> */}
+                    </KeyboardAvoidingView>
                 </Overlay>
             </View>
         </KeyboardAvoidingView>

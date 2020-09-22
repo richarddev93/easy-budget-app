@@ -34,13 +34,6 @@ export default styles = StyleSheet.create({
         borderRadius : 10,
         borderColor :'gray',
         shadowColor: "#024059",
-        shadowOffset: {
-            width: 0,
-            height: 3,
-        },
-        shadowOpacity: 0.29,
-        shadowRadius: 4.65,
-        elevation: 3,         
         alignItems: 'center',
         justifyContent: 'center',
         marginHorizontal:10,
@@ -145,6 +138,7 @@ export default styles = StyleSheet.create({
         backgroundColor: '#2A2AC0',
       },
       buttonGroup :{
+          justifyContent: 'flex-end',
           flexDirection: 'row',
           alignContent: 'space-between',
       },
