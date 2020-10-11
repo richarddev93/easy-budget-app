@@ -11,7 +11,7 @@ const index = ({label,placeholder,value,setText}) => {
             label={label}
             placeholder={placeholder}
             value={value}
-            onChangeText={()=>setText()}
+            onChangeText={(item)=>setText(item)}
             containerStyle={styles.containerStyle}
             style={styles.styleInput}
             inputContainerStyle={styles.inputContainerStyle}

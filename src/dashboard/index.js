@@ -1,12 +1,16 @@
-import React from 'react'
+import React, { useEffect }  from 'react'
 import { StyleSheet, Text, View,TextInput,KeyboardAvoidingView ,TouchableOpacity, Alert } from 'react-native'
 import styles from './styles'
 import {Feather,FontAwesome,FontAwesome5} from '@expo/vector-icons'
 import { SearchBar,Image,Header  } from 'react-native-elements';
 
-import settingImage from  '../../assets/gear.png'
+import settingImage from  '../../assets/gear.png';
+
+
+import {initDB,cleanDatabases} from '../database/initdb';
 const index = ({navigation}) => {
-    
+
+    // initDB();
 
     return (
         <KeyboardAvoidingView

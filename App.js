@@ -6,8 +6,11 @@ import BudgetList from './src/budget_list'
 import Services_list from './src/service_list'
 import Clients from './src/clients_list'
 import Routes from  './routes'
+import {initDB,cleanDatabases} from './src/database/initdb';
 
 export default function App() {
+  initDB();
+  // cleanDatabases();
   return (
     <Routes />
   );

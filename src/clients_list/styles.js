@@ -102,19 +102,26 @@ export default styles = StyleSheet.create({
     //   textDecorationLine : 'underline'
     },
     clientEmail :{
+        flex:1,
+        flexWrap: 'wrap',
         fontSize:15,
     },
     clientTel :{
         color :'#009a2d'
     },
     clientDescContainer :{
+        flex:1.5,
         justifyContent: 'flex-start',
+        
     },   
     clientDescObs:{
+        flex:1,
         justifyContent: 'flex-start',
     },
     clientDescBudgets :{
+        flex:1,
         justifyContent: 'flex-start',
+        alignItems: 'center',
         paddingRight: 10,
     },   
     clientDescTitle :{
@@ -127,7 +134,7 @@ export default styles = StyleSheet.create({
         fontSize:16,
     },
     clientNumBudget : {
-        fontSize :30,
+        fontSize :25,
         fontWeight:'bold'
     },
     fab: {
