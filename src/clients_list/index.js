@@ -1,4 +1,4 @@
-import React, { useState,useEffect } from 'react'
+import React, { useState,useEffect ,useRef } from 'react'
 import { FlatList, Text, View,Alert,KeyboardAvoidingView ,TouchableOpacity,ToastAndroid } from 'react-native'
 import {FontAwesome5} from '@expo/vector-icons'
 import { SearchBar,Overlay,Button ,Divider} from 'react-native-elements';
@@ -8,11 +8,25 @@ import _ from 'lodash';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import InputCustom from '../components/input'
 import * as Animatable from  'react-native-animatable';
+import { Modalize } from 'react-native-modalize';
+import TextInputMask from 'react-native-text-input-mask';
+import {Assets, Colors, Image, Toast} from 'react-native-ui-lib';
+
+
+
+
+
+import {
+    DotIndicator,
+  } from 'react-native-indicators';
+
 
 
 import styles from './styles'
 import {addData,findAll,updateById,deleteById} from '../database/controlDb';
 import { showToastWithGravityAndOffset} from '../utils/functions';
+import ValidationFunction from '../services/validateForm';
+
 const Tab = createMaterialTopTabNavigator();
 
 //Quando pesquisar na api usar o debounce
@@ -32,10 +46,36 @@ const index = ({navigation}) => {
     const [newPhone,setNewPhone] = useState('');
     const [newEmail,setNewEmail] = useState('');
     const [newDesc,setNewDesc] = useState('');
-    const [newIsOpen,setNewIsOpen] = useState(false);
+    const [showToast,setshowToast] = useState(false);
     const [idUser,setIdUser] = useState(null);
+    
+    //array para mapear campos errados          |name |email|alias|phone|desc
+    const [errorArray,setErrorArray] = useState([true,true,true,true,true]);
+    const [fabVisible, setfabVisible] = useState(true);
 
-    const [count,setCount] = useState(4)
+
+    const [isLoadingSpinner,setIsLoadingSpinner] = useState(false);
+    const [isLoadingButton,setIsLoadingButton] = useState(false);
+    
+    const modalizeRef = useRef(null);
+    
+
+    const onOpen = () => {
+        // console.log("abrindo modalize")
+        setfabVisible(false)
+        modalizeRef.current?.open();
+    };
+
+    const onClose =()=>{
+        // console.log("fechando modalize");
+        setfabVisible(true);
+        modalizeRef.current?.close();
+
+    }
+
+    const dismissBottomToast = () => {
+       setshowToast(false);
+      }
 
 
     const windowWidth = useWindowDimensions().width;
@@ -65,8 +105,6 @@ const index = ({navigation}) => {
         setData(dataaux);
     }
 
-   
-    
     const _handleCLient = (clientaux) => {
         console.log(clientaux)
         setNewName(clientaux.name);
@@ -77,9 +115,28 @@ const index = ({navigation}) => {
         setIdUser(clientaux.id);//usado para alterar e deletar o item do array
 
         setIsUpdate(true);
-        setVisible(true);
+        onOpen();
     }
+    
+    const validateClient = (field,value) =>{
 
+        let result = [true,true,true,true,true];
+
+        if ( (!newName && !newAlias) || ( newName && newName.length <=1) ||( newEmail && newEmail.length <= 1 ) ){
+           result[0]   = false;
+        }
+
+        if ( !newEmail || !ValidationFunction(newEmail,"EMAIL")) {
+            result[2] = false;
+        }
+        if (!ValidationFunction(newPhone,"PHONE")) {
+            console.log(newPhone)
+            result[3] = false;
+        }
+
+       return result;
+
+    }
     async function updateClients() {
 
         let dataAux = [
@@ -111,14 +168,17 @@ const index = ({navigation}) => {
         console.log("updateClients");
 
         try {
-            isSucess =  await updateById('clients',dataAux,idUser)
+           let isSucess =  await updateById('clients',dataAux,idUser)
 
             if (isSucess) {
                 cleanState();
-                setVisible(false);
-                showToastWithGravityAndOffset("Alterado com Sucesso !");
-                const clientsAux = await findAll('clients');
-                setData(clientsAux);
+                onClose()
+                // showToastWithGravityAndOffset("Alterado com Sucesso !");
+                setshowToast(true);
+
+                // const clientsAux = await findAll('clients');
+                // setData(clientsAux);
+                getClients();
             }else {
                 Alert.alert("Erro ao Salvar");
             }
@@ -133,14 +193,17 @@ const index = ({navigation}) => {
     async function removeClient() {
         console.log(idUser)
         try {
-            isSucess =  await deleteById('clients',idUser)
+           let isSucess =  await deleteById('clients',idUser)
 
             if (isSucess) {
                 cleanState();
-                setVisible(false);
-                showToastWithGravityAndOffset("Deletado com Sucesso !");
-                const clientsAux = await findAll('clients');
-                setData(clientsAux);
+                onClose();
+                // showToastWithGravityAndOffset("Deletado com Sucesso !");
+                setshowToast(true);
+                // const clientsAux = await findAll('clients');
+                // setData(clientsAux);
+                getClients();
+
             }else {
                 Alert.alert("Erro ao deletar");
             }
@@ -149,7 +212,7 @@ const index = ({navigation}) => {
             console.log('result',error);
             
         }
-        setVisible(false)
+        onClose();
 
     }
 
@@ -182,23 +245,46 @@ const index = ({navigation}) => {
                 value : 0
             },
         ]
-        try {
-            isSucess =  await addData('clients',dataAux);
+         
+        // setErrorArray()
+        //Validation-> altera o errotArray validando dados do client
+        let result = validateClient();
 
-            if (isSucess) {
-                cleanState();
-                setVisible(false);
-                showToastWithGravityAndOffset("Sucesso !");
-                const clientsAux = await findAll('clients');
-                setData(clientsAux);
-            }else {
-                Alert.alert("Erro ao Salvar");
+        console.log(result);
+
+        let auxValidate = result.reduce((sum, next) => sum && next, true);
+        
+        // console.log(auxValidate)
+        if (auxValidate){
+            try {
+                isSucess =  await addData('clients',dataAux);
+
+                if (isSucess) {
+                    setIsLoadingButton(false);
+                    cleanState();
+                    onClose();
+                    // showToastWithGravityAndOffset("Sucesso !");
+                    setshowToast(true);
+
+                    // const clientsAux = await findAll('clients');
+                    // setData(clientsAux);
+                    getClients();
+                }else {
+                    Alert.alert("Erro ao Salvar");
+                }
+                
+            } catch (error) {
+                console.log('result',error);
+                
             }
-            
-        } catch (error) {
-            console.log('result',error);
-            
+            setIsLoadingButton(false);
+            setErrorArray([true,true,true,true,true])
         }
+        else {
+            setIsLoadingButton(false);
+            setErrorArray(result);
+        }
+        setIsLoadingButton(false);
     }
 
     const  handleCollapseItem = (client) =>{
@@ -250,22 +336,24 @@ const index = ({navigation}) => {
             
         )
     }
-
-    const modalAddClient = () =>(
-      <Animatable.View 
-          animation='fadeInUp'
-      
-      >
-        <Overlay overlayStyle={{backgroundColor:'#E8ECF5',borderRadius:10}} isVisible={visible} onBackdropPress={toggleOverlay}>
-        <KeyboardAvoidingView
-            behavior={Platform.OS == "ios" ? "padding" : "height"} >
+    
+    const newModalHandleClient = () =>(
+        <Modalize ref={modalizeRef} 
+         onClose={()=> setfabVisible(true)}
+         modalStyle={{backgroundColor:'#E8ECF5'}}
+         >
+        {/* <KeyboardAvoidingView
+        behavior={Platform.OS == "ios" ? "padding" : "height"} > */}
+        
             <View   >
-             <Text style={{textAlign:'center',fontSize:20,fontWeight:'900',color:'#024059'}}>{isUpdate ? 'Alterando': 'Novo Cliente'}</Text>
+             <Text style={{marginTop : 5,textAlign:'center',fontSize:20,fontWeight:'900',color:'#024059'}}>{isUpdate ? 'Alterando': 'Novo Cliente'}</Text>
                 <InputCustom 
                     label={'Nome'}
                     placeholder={'Paulo'}
                     value={newName}
                     setText={setNewName}
+                    renderErrorMessage ={!errorArray[0]}
+                    errorMessage={ errorArray[0] ? '' :"Digite o nome ou um Apelido Válido"}
                     />
                 <View style={{flexDirection:'row',width:windowWidth/2.2}}>
                     <InputCustom 
@@ -273,6 +361,7 @@ const index = ({navigation}) => {
                         placeholder={'Seu Paulo'}
                         value={newAlias}
                         setText={setNewAlias}
+                        
                     />
 
                     <InputCustom 
@@ -280,19 +369,28 @@ const index = ({navigation}) => {
                         placeholder={'11981743885'}
                         value={newPhone}
                         setText={setNewPhone}
+                        renderErrorMessage ={!errorArray[3]}
+                        errorMessage={errorArray[3] ? '':"Informe um telefone válido"}
+                        keyboardType={'phone-pad'}
                         />
+
                 </View>
                 <InputCustom 
                     label={'Email'}
                     placeholder={'seupaulo@email.com.br'}
                     value={newEmail}
                     setText={setNewEmail}
+                    renderErrorMessage ={!errorArray[2]}
+                    errorMessage={errorArray[2] ?'':"Preencha um e-mail válido"}
+                    keyboardType={'email-address'}
                     />
                 <InputCustom 
                     label={'Obs.'}
                     placeholder={'Ótimo Cliente'}
                     value={newDesc}
                     setText={setNewDesc}
+                    multiline={true}
+                    numLine={4}
                     />
                 
                 <View style={styles.buttonGroup}>
@@ -301,7 +399,7 @@ const index = ({navigation}) => {
                         containerStyle ={{padding:5}}
                         buttonStyle = {{backgroundColor:'#F25050',borderWidth:1,borderColor:'#F25050',width:100,borderRadius:10}}
                         title="Apagar"
-                        onPress={()=> {setVisible(!visible); removeClient(); }}
+                        onPress={()=> { removeClient(); }}
                         />
                         : null }
                     <Button
@@ -310,32 +408,40 @@ const index = ({navigation}) => {
                         titleStyle={{color:'#024059'}}
                         title="Cancelar"
                         type={'outline'}
-                        onPress={()=> setVisible(!visible)}
+                        onPress={()=> {setErrorArray([true,true,true,true,true]) ; onClose()}}
                         />
                     <Button
                         containerStyle ={{padding:5}}
                         buttonStyle = {{backgroundColor:'#23cf5c',borderWidth:1,borderColor:'#23cf5c',width:100,borderRadius:10}}
                         title={isUpdate ? "Alterar" :"Adicionar"}
+                        loading={isLoadingButton}
                         onPress= {() =>  {
-
-                            if (isUpdate){
-                                updateClients();                                
-                            }else{
-                                addClient();
-                            }
+                            setIsLoadingButton(true);
+                            setTimeout(() => {
+                                if (isUpdate){
+                                    updateClients();                                
+                                }else{
+                                    addClient();
+                                }
+                              }, 1000);
                         }
                         }
                         />
                 </View>
             </View>
-        </KeyboardAvoidingView>
-    </Overlay>
-    </Animatable.View>
+        {/* </KeyboardAvoidingView> */}
+        </Modalize>
+
     );
+  
 
     const getClients  = async ()=>{
+        setIsLoadingSpinner(true);
         let dataaux = await findAll('clients');
         setData(dataaux);
+        setTimeout(() => {
+            setIsLoadingSpinner(false);
+          }, 300);
     }
     
     useEffect(() => {
@@ -351,7 +457,7 @@ const index = ({navigation}) => {
                     <View style={styles.headerTop}>
                         <View >
                             <TouchableOpacity onPress={() => navigation.goBack()}>
-                                <FontAwesome5 name= 'chevron-left' size = {25} color={'#024059'} />
+                                <FontAwesome5 name= 'chevron-left' size = {35} color={'#024059'} />
                             </TouchableOpacity>                      
                         </View> 
                         <TouchableOpacity onPress={()=>Alert.alert("Voltando")}>
@@ -383,24 +489,42 @@ const index = ({navigation}) => {
 
                 </View>
                 <View style={{ flex: 8}}>
-                    <FlatList
-                        data ={data}
-                        style = {styles.list}
-                        keyExtractor={client => String(client.id)}
-                        showsVerticalScrollIndicator = {false}
-                        renderItem ={ ({item:client,index}) =>(
-                            
-                            _renderItem(client,index)
-                            )}
+                    {isLoadingSpinner ? 
+                         <DotIndicator color='white' />
+                    :
+
+                        <FlatList
+                            data ={data}
+                            style = {styles.list}
+                            keyExtractor={client => String(client.id)}
+                            showsVerticalScrollIndicator = {false}
+                            renderItem ={ ({item:client,index}) =>(
+                                
+                                _renderItem(client,index)
+                                )}
                         />
+                    }
                 </View>
+             {newModalHandleClient()}
+            </View>
                 <FAB
                     style={styles.fab}
+                    visible={fabVisible}
                     icon="plus"
-                    onPress={() => { cleanState(); setIsUpdate(false);  setVisible(true);}}
+                    // onPress={() => { cleanState(); setIsUpdate(false);  setVisible(true);}}
+                    onPress={() => { cleanState(); setIsUpdate(false); onOpen() ;}}
                 />
-             {modalAddClient()}
-            </View>
+                <Toast
+                    // renderAttachment={this.renderBelowToast}
+                    visible={showToast}
+                    position={'bottom'}
+                    backgroundColor={Colors.green30}
+                    message="Toast with two lines of text. Toast with two lines of text"
+                    onDismiss={dismissBottomToast}
+                    // autoDismiss={3000}
+                    showDismiss={true}
+                    // action={{iconSource: Assets.icons.x, onPress: () => console.log('dismiss')}}
+                    />
         </KeyboardAvoidingView>
     )
 }
