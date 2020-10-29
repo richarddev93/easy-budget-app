@@ -1,17 +1,38 @@
-import React from 'react'
+import React ,{ forwardRef }from 'react'
 import { StyleSheet } from 'react-native'
 import { Input } from 'react-native-elements';
-import { set } from 'react-native-reanimated';
+import { MaskedInput} from 'react-native-ui-lib';
 
 
-const index = ({label,placeholder,value,setText,errorMessage,isError,multiline,numLine,keyboardType}) => {
+const Index = ({label,placeholder,value,setText,errorMessage,isError,multiline,numLine,keyboardType,maskedRender,onChange}) => {
+  
+   const Maskedinputaux = () => {
+        return (
+            <MaskedInput
+                placeholder={placeholder}
+                renderMaskedText={maskedRender}
+                keyboardType={keyboardType}
+                // onChangeText={(item) =>  setText(item) }
+               onChange={onChange}
+                containerStyle ={
+                    {
+                        width:'100%',
+                        paddingHorizontal:10  ,
+                        paddingVertical:1                   
+                    }
+                }
+                value={value}
+                />
+        )
+   }
 
+   
     return (
+      
         <Input
             label={label}
-            placeholder={placeholder}
-            value={value}
-            onChangeText={(item)=>setText(item)}
+            //  onChangeText ={(item)=>handleText(item)}
+            // onChange = {onChange}
             containerStyle={styles.containerStyle}
             style={styles.styleInput}
             inputContainerStyle={styles.inputContainerStyle}
@@ -23,11 +44,16 @@ const index = ({label,placeholder,value,setText,errorMessage,isError,multiline,n
             numberOfLines={numLine}
             keyboardType={keyboardType}
             autoCompleteType='off'
+            InputComponent = {
+              forwardRef(Maskedinputaux)
+            }
+            // value={value}
+            
             />
     )
 }
 
-export default index
+export default Index;
 
 const styles = StyleSheet.create({
     containerStyle:{
@@ -35,12 +61,14 @@ const styles = StyleSheet.create({
         backgroundColor:'#E8ECF5',
         marginVertical:1
         
+        
     },
     styleInput :{
         width:'95%',
         marginBottom:0,
         fontSize:17,
-        paddingHorizontal:10
+        paddingHorizontal:10,
+        
     },
     inputContainerStyle :{
         backgroundColor:'#fff',
@@ -54,6 +82,7 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.29,
         shadowRadius: 4.65,
         elevation: 1, 
+        paddingVertical:12,
     },
     labelStyle :{
         marginBottom:5,

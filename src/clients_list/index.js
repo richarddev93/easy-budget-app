@@ -1,19 +1,28 @@
 import React, { useState,useEffect ,useRef } from 'react'
-import { FlatList, Text, View,Alert,KeyboardAvoidingView ,TouchableOpacity,ToastAndroid } from 'react-native'
+import { 
+      FlatList,
+      Text,
+      View,
+      Alert,
+      KeyboardAvoidingView ,
+      TouchableOpacity,
+      useWindowDimensions ,
+      Dimensions} from 'react-native'
+
 import {FontAwesome5} from '@expo/vector-icons'
 import { SearchBar,Overlay,Button ,Divider} from 'react-native-elements';
 import { FAB } from 'react-native-paper';
-import { useWindowDimensions } from 'react-native';
+import {  } from 'react-native';
 import _ from 'lodash';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import InputCustom from '../components/input'
-import * as Animatable from  'react-native-animatable';
+import Constants from 'expo-constants';
 import { Modalize } from 'react-native-modalize';
-import TextInputMask from 'react-native-text-input-mask';
-import {Assets, Colors, Image, Toast} from 'react-native-ui-lib';
+// import TextInputMask from 'react-native-text-input-mask';
+import { Colors,  Toast, MaskedInput} from 'react-native-ui-lib';
 
-
-
+const heightScreen = Dimensions.get('window').height - Constants.statusBarHeight;
+import { mask,unMask } from 'remask';
 
 
 import {
@@ -26,11 +35,17 @@ import styles from './styles'
 import {addData,findAll,updateById,deleteById} from '../database/controlDb';
 import { showToastWithGravityAndOffset} from '../utils/functions';
 import ValidationFunction from '../services/validateForm';
+import InputMaskedCustom from '../components/inputMasked';
+import { onChange } from 'react-native-reanimated';
 
 const Tab = createMaterialTopTabNavigator();
 
 //Quando pesquisar na api usar o debounce
 //usar o list Footer component
+
+//patterns
+const patterns = ['(99) 9999-9999', '(99) 99999-9999']
+
 
 const index = ({navigation}) => {
 
@@ -48,6 +63,33 @@ const index = ({navigation}) => {
     const [newDesc,setNewDesc] = useState('');
     const [showToast,setshowToast] = useState(false);
     const [idUser,setIdUser] = useState(null);
+
+    const modelclient = [
+        {
+            field : 'name',
+            value : `${newName}`
+        },
+        {
+            field : 'alias',
+            value : `${newAlias}`
+        },
+        {
+            field : 'phone',
+            value : `${newPhone}`
+        },
+        {
+            field : 'email',
+            value :`${newEmail}`
+        },
+        {
+            field : 'desc',
+            value : `${newDesc}`
+        },
+        {
+            field : 'isOpen',
+            value : 0
+        },
+    ]
     
     //array para mapear campos errados          |name |email|alias|phone|desc
     const [errorArray,setErrorArray] = useState([true,true,true,true,true]);
@@ -58,6 +100,8 @@ const index = ({navigation}) => {
     const [isLoadingButton,setIsLoadingButton] = useState(false);
     
     const modalizeRef = useRef(null);
+
+  
     
 
     const onOpen = () => {
@@ -71,14 +115,11 @@ const index = ({navigation}) => {
         setfabVisible(true);
         modalizeRef.current?.close();
 
-    }
+    };
 
     const dismissBottomToast = () => {
        setshowToast(false);
-      }
-
-
-    const windowWidth = useWindowDimensions().width;
+    };
 
     const toggleOverlay = () => {
         setVisible(!visible);
@@ -91,7 +132,7 @@ const index = ({navigation}) => {
         setNewDesc('');
         setNewAlias('');
         setIdUser(null);
-    }
+    };
 
     const handleSearch = (text) =>{
         const formattedQuery = text//.toLowerCase();
@@ -103,10 +144,10 @@ const index = ({navigation}) => {
         });
         setSearch(text);
         setData(dataaux);
-    }
+    };
 
     const _handleCLient = (clientaux) => {
-        console.log(clientaux)
+        // console.log(clientaux)
         setNewName(clientaux.name);
         setNewEmail(clientaux.email);
         setNewPhone(clientaux.phone);
@@ -116,9 +157,9 @@ const index = ({navigation}) => {
 
         setIsUpdate(true);
         onOpen();
-    }
+    };
     
-    const validateClient = (field,value) =>{
+    const validateClient = () =>{
 
         let result = [true,true,true,true,true];
 
@@ -129,46 +170,21 @@ const index = ({navigation}) => {
         if ( !newEmail || !ValidationFunction(newEmail,"EMAIL")) {
             result[2] = false;
         }
-        if (!ValidationFunction(newPhone,"PHONE")) {
-            console.log(newPhone)
+
+        if (!ValidationFunction(newPhone,"PHONE")) {            
             result[3] = false;
         }
 
        return result;
 
-    }
+    };
+
     async function updateClients() {
 
-        let dataAux = [
-            {
-                field : 'name',
-                value : `${newName}`
-            },
-            {
-                field : 'alias',
-                value : `${newAlias}`
-            },
-            {
-                field : 'phone',
-                value : `${newPhone}`
-            },
-            {
-                field : 'email',
-                value :`${newEmail}`
-            },
-            {
-                field : 'desc',
-                value : `${newDesc}`
-            },
-            {
-                field : 'isOpen',
-                value : 0
-            },
-        ]
         console.log("updateClients");
 
         try {
-           let isSucess =  await updateById('clients',dataAux,idUser)
+           let isSucess =  await updateById('clients',modelclient,idUser)
 
             if (isSucess) {
                 cleanState();
@@ -187,18 +203,19 @@ const index = ({navigation}) => {
             console.log('result',error);
             
         }
+        setIsLoadingButton(false);
+
        
-    }
+    };
 
     async function removeClient() {
-        console.log(idUser)
+
         try {
            let isSucess =  await deleteById('clients',idUser)
 
             if (isSucess) {
                 cleanState();
                 onClose();
-                // showToastWithGravityAndOffset("Deletado com Sucesso !");
                 setshowToast(true);
                 // const clientsAux = await findAll('clients');
                 // setData(clientsAux);
@@ -212,40 +229,14 @@ const index = ({navigation}) => {
             console.log('result',error);
             
         }
+        setIsLoadingButton(false);
         onClose();
 
-    }
+    };
 
     const addClient = async ()  =>{
         //Mudar para api
-       let isSucess = null; 
-       let dataAux = [
-            {
-                field : 'name',
-                value : `${newName}`
-            },
-            {
-                field : 'alias',
-                value : `${newAlias}`
-            },
-            {
-                field : 'phone',
-                value : `${newPhone}`
-            },
-            {
-                field : 'email',
-                value :`${newEmail}`
-            },
-            {
-                field : 'desc',
-                value : `${newDesc}`
-            },
-            {
-                field : 'isOpen',
-                value : 0
-            },
-        ]
-         
+       let isSucess = null;    
         // setErrorArray()
         //Validation-> altera o errotArray validando dados do client
         let result = validateClient();
@@ -257,7 +248,7 @@ const index = ({navigation}) => {
         // console.log(auxValidate)
         if (auxValidate){
             try {
-                isSucess =  await addData('clients',dataAux);
+                isSucess =  await addData('clients',modelclient);
 
                 if (isSucess) {
                     setIsLoadingButton(false);
@@ -285,7 +276,7 @@ const index = ({navigation}) => {
             setErrorArray(result);
         }
         setIsLoadingButton(false);
-    }
+    };
 
     const  handleCollapseItem = (client) =>{
         
@@ -297,7 +288,7 @@ const index = ({navigation}) => {
             return item;
         })
         setData(newData)
-    }  
+    };
 
     const _renderItem = (client,index) => {
 
@@ -309,16 +300,16 @@ const index = ({navigation}) => {
                         <Text style ={styles.clientEmail}>{client.email}</Text>
                         <Text style ={styles.clientTel}>{client.phone}</Text>
                     </View>
-                    <View  style={styles.clientDescObs}>
+                    {/* <View  style={styles.clientDescObs}>
                         <Text style = {styles.clientDescTitle}>OBS.:</Text>
                         <Text style = {styles.clientDesc}>{client.desc}</Text>
-                    </View>
+                    </View> */}
                     <View  style={styles.clientDescBudgets}>
-                            <TouchableOpacity  onPress = {() => handleCollapseItem(client)} style = {{alignItems : 'center'}}>
-                                <Text style={styles.clientDescTitle}>Orçamentos <FontAwesome5  name ={client.isOpen ? 'angle-up' : 'angle-down'} size ={15} /> </Text>
-                            </TouchableOpacity>
-                            <Text style = {styles.clientNumBudget}>12 </Text> 
-                        </View>
+                        <TouchableOpacity  onPress = {() => handleCollapseItem(client)} style = {{alignItems : 'flex-end'}}>
+                            <Text style={styles.clientDescTitle}>Orçamentos <FontAwesome5  name ={client.isOpen ? 'angle-up' : 'angle-down'} size ={15} /> </Text>
+                        </TouchableOpacity>
+                        <Text style = {styles.clientNumBudget}>12 </Text> 
+                    </View>
                 </View>
                 { client.isOpen ? (
                         <View>
@@ -335,16 +326,17 @@ const index = ({navigation}) => {
             </TouchableOpacity>
             
         )
-    }
+    };
     
     const newModalHandleClient = () =>(
         <Modalize ref={modalizeRef} 
+            // scrollViewProps={{ showsVerticalScrollIndicator: false }}
+            modal={heightScreen}
          onClose={()=> setfabVisible(true)}
          modalStyle={{backgroundColor:'#E8ECF5'}}
+         keyboardAvoidingBehavior ={Platform.OS == "ios" ? "padding" : "height"}
          >
-        {/* <KeyboardAvoidingView
-        behavior={Platform.OS == "ios" ? "padding" : "height"} > */}
-        
+       
             <View   >
              <Text style={{marginTop : 5,textAlign:'center',fontSize:20,fontWeight:'900',color:'#024059'}}>{isUpdate ? 'Alterando': 'Novo Cliente'}</Text>
                 <InputCustom 
@@ -355,25 +347,26 @@ const index = ({navigation}) => {
                     renderErrorMessage ={!errorArray[0]}
                     errorMessage={ errorArray[0] ? '' :"Digite o nome ou um Apelido Válido"}
                     />
-                <View style={{flexDirection:'row',width:windowWidth/2.2}}>
+                <View style={{ flexDirection:'row',justifyContent:'center',}}>
                     <InputCustom 
                         label={'Apelido'}
                         placeholder={'Seu Paulo'}
                         value={newAlias}
                         setText={setNewAlias}
                         
-                    />
-
+                    />            
                     <InputCustom 
                         label={'Telefone'}
-                        placeholder={'11981743885'}
+                        placeholder={'  (99) 99999-9999'}
                         value={newPhone}
-                        setText={setNewPhone}
+                        setText={(value)=> { 
+                            setNewPhone(mask(unMask(value), patterns))
+                        }}
                         renderErrorMessage ={!errorArray[3]}
-                        errorMessage={errorArray[3] ? '':"Informe um telefone válido"}
+                        errorMessage={errorArray[3] ?'':"Preencha um e-mail válido"}
                         keyboardType={'phone-pad'}
-                        />
-
+                        
+                    />                              
                 </View>
                 <InputCustom 
                     label={'Email'}
@@ -429,11 +422,9 @@ const index = ({navigation}) => {
                         />
                 </View>
             </View>
-        {/* </KeyboardAvoidingView> */}
         </Modalize>
 
     );
-  
 
     const getClients  = async ()=>{
         setIsLoadingSpinner(true);
@@ -442,16 +433,16 @@ const index = ({navigation}) => {
         setTimeout(() => {
             setIsLoadingSpinner(false);
           }, 300);
-    }
+    };
     
     useEffect(() => {
         getClients();
     }, []);
 
     return (
-        <KeyboardAvoidingView
-        behavior={Platform.OS == "ios" ? "padding" : "height"}
-        style={styles.container} >
+        // <KeyboardAvoidingView
+        // behavior={Platform.OS == "ios" ? "padding" : "height"}
+        // style={styles.container} >
             <View style={styles.container}>
                 <View style = {styles.headerStyle}>    
                     <View style={styles.headerTop}>
@@ -505,27 +496,33 @@ const index = ({navigation}) => {
                         />
                     }
                 </View>
+
+            {/* Chamada do modal cliente  */}
              {newModalHandleClient()}
+             {/* toast  de sucesso */}
+             <Toast
+                 // renderAttachment={this.renderBelowToast}
+                 visible={showToast}
+                 position={'bottom'}
+                 backgroundColor={Colors.green30}
+                 message="SUCESSO                           "
+                 onDismiss={dismissBottomToast}
+                 autoDismiss={3000}
+                 showDismiss={true}
+                 onDismiss={dismissBottomToast}
+                 // action={{iconSource: Assets.icons.x, onPress: () => console.log('dismiss')}}
+                 />
+
+            {/* Botão adicionar    */}
+             <FAB
+                 style={styles.fab}
+                 visible={fabVisible && !showToast}
+                 icon="plus"
+                 // onPress={() => { cleanState(); setIsUpdate(false);  setVisible(true);}}
+                 onPress={() => { cleanState(); setIsUpdate(false); onOpen() ;}}
+             />
             </View>
-                <FAB
-                    style={styles.fab}
-                    visible={fabVisible}
-                    icon="plus"
-                    // onPress={() => { cleanState(); setIsUpdate(false);  setVisible(true);}}
-                    onPress={() => { cleanState(); setIsUpdate(false); onOpen() ;}}
-                />
-                <Toast
-                    // renderAttachment={this.renderBelowToast}
-                    visible={showToast}
-                    position={'bottom'}
-                    backgroundColor={Colors.green30}
-                    message="Toast with two lines of text. Toast with two lines of text"
-                    onDismiss={dismissBottomToast}
-                    // autoDismiss={3000}
-                    showDismiss={true}
-                    // action={{iconSource: Assets.icons.x, onPress: () => console.log('dismiss')}}
-                    />
-        </KeyboardAvoidingView>
+        // </KeyboardAvoidingView>
     )
 }
 

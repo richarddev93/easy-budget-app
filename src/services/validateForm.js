@@ -118,9 +118,16 @@ function EMAIL(email) {
     }
 }
 function TELEFONE(telefone){
-    if (!telefone || telefone.length <8 || telefone.length>9  ){
+     console.log(telefone,"Telefone")
+    telefone = telefone.replace(/[^\d]+/g,'');
+    telefone = telefone.trim();
+    console.log(telefone.length)
+    if (!telefone || telefone.length <8 || telefone.length>11  ){
+        console.log(false)
         return false;
     } else {
+        console.log(true)
+
         return true;
     }
 

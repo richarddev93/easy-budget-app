@@ -152,7 +152,8 @@ export default styles = StyleSheet.create({
       FormAddClient :{
           justifyContent: 'center',
           height:'100%' ,
-      }
+      },
+     
 
     
 })
